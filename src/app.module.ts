@@ -8,10 +8,25 @@ import { EmployeesModule } from './employees/employees.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ServicesModule } from './services/services.module';
 import { ShopSettingsModule } from './shop-settings/shop-settings.module';
+import { PrismaModule }         from '../prisma/prisma.module';
+import { AuthModule }           from './auth/auth.module'; 
+import { CustomerPortalModule } from './customer-portal/portal.module';
 
 @Module({
-  imports: [CustomersModule, AppointmentsModule, InventoryModule, EmployeesModule, TransactionModule, ServicesModule, ShopSettingsModule], // <-- THIS IS THE CRITICAL PART
+  imports: [
+    PrismaModule,         // Global — available everywhere
+    AuthModule,           // POST /auth/login, /auth/register
+    CustomerPortalModule, // All /customer, /appointments, /history, /payments, /settings
+    // Existing admin modules below
+    CustomersModule,
+    AppointmentsModule,
+    InventoryModule,
+    EmployeesModule,
+    TransactionModule,
+    ServicesModule,
+    ShopSettingsModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers:   [AppService],
 })
 export class AppModule {}

@@ -20,6 +20,12 @@ export class AppointmentsController {
     return this.appointmentsService.findAll();
   }
 
+  // GET /appointments/customer/:customerId
+@Get('customer/:customerId')
+findByCustomer(@Param('customerId') customerId: string) {
+  return this.appointmentsService.findByCustomer(customerId);
+}
+
   // GET /appointments/:id
   @Get(':id')
   findOne(@Param('id') id: string) {

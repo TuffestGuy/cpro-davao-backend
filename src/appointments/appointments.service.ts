@@ -23,6 +23,13 @@ export class AppointmentsService {
       include: { customer: true },
     });
   }
+  async findByCustomer(customerId: string) {
+  return await prisma.appointments.findMany({
+    where:   { customer_id: customerId },
+    include: { customer: true },
+    orderBy: { scheduled_date: 'desc' },
+  });
+}
 
   // GET ALL
   async findAll() {
@@ -68,11 +75,11 @@ export class AppointmentsService {
 
     // Only update fields that were actually sent
     const data: any = {};
-    if (dto.customer_id)    data.customer_id    = dto.customer_id;
-    if (dto.service_type)   data.service_type   = dto.service_type;
-    if (dto.scheduled_date) data.scheduled_date = new Date(dto.scheduled_date);
-    if (dto.total_cost)     data.total_cost     = dto.total_cost;
-    if (dto.status)         data.status         = dto.status;
+    if (dto.customer_id    !== undefined) data.customer_id    = dto.customer_id;
+    if (dto.service_type   !== undefined) data.service_type   = dto.service_type;
+    if (dto.scheduled_date !== undefined) data.scheduled_date = new Date(dto.scheduled_date);
+    if (dto.total_cost !== undefined) data.total_cost = dto.total_cost;
+    if (dto.status         !== undefined) data.status         = dto.status;
 
     return await prisma.appointments.update({
       where:   { id },
