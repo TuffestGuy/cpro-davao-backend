@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -12,7 +12,11 @@ export class AppointmentsService {
       data: {
         customer_id:    dto.customer_id,
         service_type:   dto.service_type,
-        scheduled_date: new Date(dto.scheduled_date),
+        scheduled_date: (() => {
+        const d = new Date(dto.scheduled_date);
+        if (isNaN(d.getTime())) throw new BadRequestException("Invalid scheduled_date");
+         return d;
+})(),
         total_cost:     dto.total_cost,
         status:         'Pending',
       },
