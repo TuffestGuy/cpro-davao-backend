@@ -21,6 +21,8 @@ model customers {
   last_service    DateTime? @db.Date
   total_spent     Decimal?  @default(0) @db.Decimal
   status          String?   @default("Active")
+
+  appointments   appointments[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -83,6 +85,18 @@ model transaction {
   category    String
   date        DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+model appointments {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  customer_id    String    @db.Uuid
+  service_type   String    // e.g., "Ceramic Coating", "Premium Wash"
+  scheduled_date DateTime  @db.Timestamptz(6)
+  status         String    @default("Pending") // Pending, In Progress, Completed
+  total_cost     Decimal   @db.Decimal
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+
+  // This creates the magical link to the customer table!
+  customer       customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
 }
 
 enum appointment_status {
