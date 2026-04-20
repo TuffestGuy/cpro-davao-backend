@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 const prisma = new PrismaClient();
 
@@ -7,13 +8,12 @@ const prisma = new PrismaClient();
 export class CustomersService {
 
   async update(id: string, dto: UpdateCustomerDto) {
-  return this.prisma.customers.update({
-    where: { id },
-    data: dto,
-  });
-}
-  
-  // Create a new customer
+    return await prisma.customers.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
   async create(createCustomerDto: any) {
     return await prisma.customers.create({
       data: {
@@ -26,7 +26,6 @@ export class CustomersService {
     });
   }
 
-  // Get all customers (newest first)
   async findAll() {
     return await prisma.customers.findMany({
       orderBy: { created_at: 'desc' }
