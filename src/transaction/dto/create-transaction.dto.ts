@@ -2,8 +2,8 @@ import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, Min } from 'class-v
 import { Type } from 'class-transformer';
 
 export enum TransactionType {
-  Income = 'Income',
-  Expense = 'Expense',
+  Income = 'income',
+  Expense = 'expense',
 }
 
 export enum TransactionCategory {
