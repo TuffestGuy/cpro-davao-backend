@@ -16,6 +16,11 @@ export class CustomersController {
     return this.customersService.findAll();
   }
 
+  @Get('by-email/:email')
+  findByEmail(@Param('email') email: string) {
+  return this.customersService.findByEmail(email);
+}
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
   return this.customersService.update(id, dto);

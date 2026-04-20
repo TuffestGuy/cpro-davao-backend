@@ -26,6 +26,12 @@ export class CustomersService {
     });
   }
 
+  async findByEmail(email: string) {
+  return await prisma.customers.findFirst({
+    where: { email },
+  });
+}
+
   async findAll() {
     return await prisma.customers.findMany({
       orderBy: { created_at: 'desc' }
