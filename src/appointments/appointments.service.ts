@@ -1,31 +1,89 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class AppointmentsService {
-  
-  // 1. Create a new Appointment linked to a Customer
-  async create(createAppointmentDto: any) {
+
+  // CREATE
+  async create(dto: any) {
     return await prisma.appointments.create({
       data: {
-        customer_id: createAppointmentDto.customer_id,
-        service_type: createAppointmentDto.service_type,
-        scheduled_date: new Date(createAppointmentDto.scheduled_date),
-        total_cost: createAppointmentDto.total_cost,
-        status: 'Pending',
+        customer_id:    dto.customer_id,
+        service_type:   dto.service_type,
+        scheduled_date: new Date(dto.scheduled_date),
+        total_cost:     dto.total_cost,
+        status:         'Pending',
       },
+      include: { customer: true },
     });
   }
 
-  // 2. Get all appointments with Customer details (The "Join" query)
+  // GET ALL
   async findAll() {
     return await prisma.appointments.findMany({
-      include: {
-        customer: true, // This brings in the name/phone of the owner!
-      },
-      orderBy: { scheduled_date: 'asc' },
+      include:  { customer: true },
+      orderBy:  { scheduled_date: 'asc' },
     });
+  }
+
+  // GET ONE
+  async findOne(id: string) {
+    const appointment = await prisma.appointments.findUnique({
+      where:   { id },
+      include: { customer: true },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException(`Appointment ${id} not found`);
+    }
+
+    return appointment;
+  }
+
+  // UPDATE STATUS ONLY (for "Mark as Complete" button)
+  async updateStatus(id: string, status: string) {
+    const valid = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+
+    if (!valid.includes(status)) {
+      throw new Error(`Invalid status: ${status}`);
+    }
+
+    return await prisma.appointments.update({
+      where:   { id },
+      data:    { status },
+      include: { customer: true },
+    });
+  }
+
+  // UPDATE FULL APPOINTMENT
+  async update(id: string, dto: any) {
+    // Check it exists first
+    await this.findOne(id);
+
+    // Only update fields that were actually sent
+    const data: any = {};
+    if (dto.customer_id)    data.customer_id    = dto.customer_id;
+    if (dto.service_type)   data.service_type   = dto.service_type;
+    if (dto.scheduled_date) data.scheduled_date = new Date(dto.scheduled_date);
+    if (dto.total_cost)     data.total_cost     = dto.total_cost;
+    if (dto.status)         data.status         = dto.status;
+
+    return await prisma.appointments.update({
+      where:   { id },
+      data,
+      include: { customer: true },
+    });
+  }
+
+  // DELETE
+  async remove(id: string) {
+    // Check it exists first
+    await this.findOne(id);
+
+    await prisma.appointments.delete({ where: { id } });
+
+    return { message: 'Appointment deleted successfully' };
   }
 }
