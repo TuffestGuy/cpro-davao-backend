@@ -5,6 +5,13 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class CustomersService {
+
+  async update(id: string, dto: UpdateCustomerDto) {
+  return this.prisma.customers.update({
+    where: { id },
+    data: dto,
+  });
+}
   
   // Create a new customer
   async create(createCustomerDto: any) {

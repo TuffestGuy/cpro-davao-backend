@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { CustomersService } from './customers.service';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Controller('customers')
 export class CustomersController {
@@ -14,4 +15,9 @@ export class CustomersController {
   findAll() {
     return this.customersService.findAll();
   }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
+  return this.customersService.update(id, dto);
+}
 }
