@@ -8,21 +8,27 @@ export class AppointmentsService {
 
   // CREATE
   async create(dto: any) {
+  try {
     return await prisma.appointments.create({
       data: {
         customer_id:    dto.customer_id,
         service_type:   dto.service_type,
         scheduled_date: (() => {
-        const d = new Date(dto.scheduled_date);
-        if (isNaN(d.getTime())) throw new BadRequestException("Invalid scheduled_date");
-         return d;
-})(),
-        total_cost:     dto.total_cost,
-        status:         'Pending',
+          const d = new Date(dto.scheduled_date);
+          if (isNaN(d.getTime())) throw new BadRequestException("Invalid scheduled_date");
+          return d;
+        })(),
+        total_cost:  dto.total_cost,
+        status:      'Pending',
       },
-      include: { customer: true },
+      include: { customer: true },  // ← try changing to customers: true if error persists
     });
+  } catch (err) {
+    console.error('Prisma create error:', err); // ← check Render logs for this
+    throw err;
   }
+}
+
   async findByCustomer(customerId: string) {
   return await prisma.appointments.findMany({
     where:   { customer_id: customerId },
