@@ -1,13 +1,108 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model customers {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name            String
+  phone           String?
+  email           String?
+  vehicle_details Json?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  contact         String?
+  vehicle         String?
+  last_service    DateTime? @db.Date
+  total_spent     Decimal?  @default(0) @db.Decimal
+  status          String?   @default("Active")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model employees {
+  id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name               String
+  position           String
+  department         String
+  salary             Decimal?  @default(0) @db.Decimal
+  status             String?   @default("Active")
+  performance        String?   @default("Good")
+  availability       String?   @default("Available")
+  current_assignment String?   @default("None")
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model inventory_items {
+  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String
+  category            String
+  quantity            Int?      @default(0)
+  unit_price          Decimal   @db.Decimal(10, 2)
+  low_stock_threshold Int?      @default(5)
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+  stock_in            Decimal?  @default(0) @db.Decimal
+  stock_out           Decimal?  @default(0) @db.Decimal
+  unit                String?   @default("pcs")
+  price               Decimal?  @default(0) @db.Decimal
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model services {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String
+  category   String
+  duration   String
+  price      Decimal   @db.Decimal
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model shop_settings {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  business_name  String?
+  contact_number String?
+  email          String?
+  website        String?
+  address        String?
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transaction {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  type        String
+  description String
+  amount      Decimal   @db.Decimal
+  category    String
+  date        DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+enum appointment_status {
+  pending
+  in_progress
+  completed
+  cancelled
+}
+
+enum payment_method {
+  cash
+  card
+  bank_transfer
+  e_wallet
+}
+
+enum user_role {
+  admin
+  staff
+  customer
+  frontdesk
+  technician
 }
