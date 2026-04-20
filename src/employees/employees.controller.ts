@@ -1,35 +1,57 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { QueryEmployeeDto } from './dto/query-employee.dto';
 
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
+  // GET /employees?search=john&department=Technical&status=Active&page=1&limit=20
   @Get()
-  findAll() {
-    return this.employeesService.findAll();
+  findAll(@Query() query: QueryEmployeeDto) {
+    return this.employeesService.findAll(query);
   }
 
+  // GET /employees/:id
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.employeesService.findOne(id);
   }
 
+  // POST /employees
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createDto: CreateEmployeeDto) {
     return this.employeesService.create(createDto);
   }
 
+  // PATCH /employees/:id
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDto: UpdateEmployeeDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateEmployeeDto,
+  ) {
     return this.employeesService.update(id, updateDto);
   }
 
+  // DELETE /employees/:id
   @Delete(':id')
-  @HttpCode(204) // Returns a "No Content" success status which is best practice for deletes
-  remove(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.employeesService.remove(id);
   }
 }

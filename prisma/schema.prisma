@@ -119,3 +119,20 @@ enum user_role {
   frontdesk
   technician
 }
+
+model part_requests {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  staff_id   String?  @db.Uuid
+  staff_name String?
+  item_id    String   @db.Uuid
+  item_name  String
+  category   String
+  quantity   Int
+  unit       String
+  reason     String
+  job_ref    String?
+  note       String?
+  status     String   @default("Pending")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}

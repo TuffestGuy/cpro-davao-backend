@@ -8,9 +8,10 @@ import { EmployeesModule } from './employees/employees.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ServicesModule } from './services/services.module';
 import { ShopSettingsModule } from './shop-settings/shop-settings.module';
+import { PartRequestsModule } from './part-requests/part-requests.module';
 
 @Module({
-  imports: [CustomersModule, AppointmentsModule, InventoryModule, EmployeesModule, TransactionModule, ServicesModule, ShopSettingsModule], // <-- THIS IS THE CRITICAL PART
+  imports: [CustomersModule, AppointmentsModule, InventoryModule, EmployeesModule, TransactionModule, ServicesModule, ShopSettingsModule, PartRequestsModule], // <-- THIS IS THE CRITICAL PART
   controllers: [AppController],
   providers: [AppService],
 })
