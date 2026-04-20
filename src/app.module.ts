@@ -8,6 +8,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ServicesModule } from './services/services.module';
 import { ShopSettingsModule } from './shop-settings/shop-settings.module';
+<<<<<<< HEAD
 import { PrismaModule }         from '../prisma/prisma.module';
 import { AuthModule }           from './auth/auth.module'; 
 import { CustomerPortalModule } from './customer-portal/portal.module';
@@ -26,6 +27,12 @@ import { CustomerPortalModule } from './customer-portal/portal.module';
     ServicesModule,
     ShopSettingsModule,
   ],
+=======
+import { PartRequestsModule } from './part-requests/part-requests.module';
+
+@Module({
+  imports: [CustomersModule, AppointmentsModule, InventoryModule, EmployeesModule, TransactionModule, ServicesModule, ShopSettingsModule, PartRequestsModule], // <-- THIS IS THE CRITICAL PART
+>>>>>>> 2cec501a910fc3727fa3ac5779e4a74c7cc7b6da
   controllers: [AppController],
   providers:   [AppService],
 })
