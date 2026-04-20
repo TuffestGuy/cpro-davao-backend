@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +14,12 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,       // Strips out extra garbage data
+    forbidNonWhitelisted: true, // Throws error if unknown fields are sent
+    transform: true,       // Converts string "50" to number 50 automatically
+  }));
 
   // 2. LISTEN TO RENDER'S PORT
   // Render automatically injects a PORT variable. If it's not there (like on your laptop), default to 3000.
