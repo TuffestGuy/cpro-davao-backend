@@ -22,7 +22,7 @@ model customers {
   total_spent     Decimal?  @default(0) @db.Decimal
   status          String?   @default("Active")
 
-  appointments   appointments[]
+  appointments appointments[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -40,18 +40,17 @@ model employees {
 }
 
 model inventory_items {
-  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name                String
-  category            String
-  quantity            Int?      @default(0)
-  unit_price          Decimal   @db.Decimal(10, 2)
-  low_stock_threshold Int?      @default(5)
-  created_at          DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
-  stock_in            Decimal?  @default(0) @db.Decimal
-  stock_out           Decimal?  @default(0) @db.Decimal
-  unit                String?   @default("pcs")
-  price               Decimal?  @default(0) @db.Decimal
+  category            String   @default("General")
+  quantity            Int      @default(0)
+  unit_price          Decimal  @default(0) @db.Decimal(10, 2)
+  low_stock_threshold Int      @default(10)
+  unit                String   @default("pcs")
+  stock_in            Int      @default(0)
+  stock_out           Int      @default(0)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -86,17 +85,17 @@ model transaction {
   date        DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
 }
+
 model appointments {
   id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   customer_id    String    @db.Uuid
-  service_type   String    // e.g., "Ceramic Coating", "Premium Wash"
+  service_type   String
   scheduled_date DateTime  @db.Timestamptz(6)
-  status         String    @default("Pending") // Pending, In Progress, Completed
+  status         String    @default("Pending")
   total_cost     Decimal   @db.Decimal
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
 
-  // This creates the magical link to the customer table!
-  customer       customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  customer customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
 }
 
 enum appointment_status {
