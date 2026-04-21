@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler'; // <--- 1. ADD THIS IMPORT
 import { QuoteRequestsService } from './quote-requests.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 
@@ -19,6 +20,7 @@ export class QuoteRequestsController {
 
   // POST /quote-requests
   // Called by QuoteForm.tsx on submit
+  @Throttle({ default: { limit: 3, ttl: 300_000 } }) // <--- 2. ADD THIS DECORATOR
   @Post()
   @HttpCode(HttpStatus.CREATED) // returns 201, not 200
   create(@Body() dto: CreateQuoteRequestDto) {
