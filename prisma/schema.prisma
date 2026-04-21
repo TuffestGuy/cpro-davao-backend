@@ -178,3 +178,15 @@ model job_orders {
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   updated_at     DateTime @default(now()) @db.Timestamptz(6)
 }
+
+model quote_requests {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String
+  contact    String
+  vehicle    String
+  service    String
+  size       String
+  notes      String?
+  status     String    @default("pending")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}

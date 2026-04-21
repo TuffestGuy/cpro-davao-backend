@@ -11,6 +11,7 @@ import { ShopSettingsModule } from './shop-settings/shop-settings.module';
 import { PartRequestsModule } from './part-requests/part-requests.module';
 import { JobOrdersModule } from './job-orders/job-orders.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProfilesModule } from './profiles/profiles.module';
     PartRequestsModule,
     JobOrdersModule,
     ProfilesModule,
+    QuoteRequestsModule,
     // keep any modules your teammate added here too
   ],
   controllers: [AppController],
