@@ -139,6 +139,7 @@ model appointments {
 
   customer  customers  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   payments  payments[]
+  @@schema("public")
 }
 
 model payments {
