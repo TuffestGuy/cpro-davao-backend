@@ -107,6 +107,8 @@ model appointments {
   created_at     DateTime?  @default(now()) @db.Timestamptz(6)
   customer       customers  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   payments       payments[]
+  employee_id    String?   @db.Uuid          // ← add this
+  assigned_staff String?                     // ← add this
 }
 
 model payments {

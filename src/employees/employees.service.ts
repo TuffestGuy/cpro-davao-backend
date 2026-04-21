@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import {
   Injectable,
   NotFoundException,
@@ -28,9 +29,7 @@ export class EmployeesService {
       limit = 20,
     } = query;
 
-    // Build the where clause dynamically
     const where: Prisma.employeesWhereInput = {
-      // Search matches name OR position (case-insensitive)
       ...(search && {
         OR: [
           { name:     { contains: search, mode: 'insensitive' } },
@@ -42,7 +41,6 @@ export class EmployeesService {
       ...(performance && { performance }),
     };
 
-    // Run count and data fetch in parallel — faster than two sequential queries
     const [total, data] = await Promise.all([
       this.prisma.employees.count({ where }),
       this.prisma.employees.findMany({
@@ -79,7 +77,7 @@ export class EmployeesService {
   // ─── CREATE ───────────────────────────────────────────────────────────────
 
   async create(data: CreateEmployeeDto) {
-    // Check for duplicate name in the same department
+    // ← fixed: was dto.name, should be data.name
     const existing = await this.prisma.employees.findFirst({
       where: {
         name:       { equals: data.name,       mode: 'insensitive' },
@@ -114,16 +112,14 @@ export class EmployeesService {
   // ─── UPDATE ───────────────────────────────────────────────────────────────
 
   async update(id: string, updateData: UpdateEmployeeDto) {
-    // Throws 404 automatically if not found
     await this.findOne(id);
 
-    // If name + department are both being changed, check for conflict
     if (updateData.name && updateData.department) {
       const conflict = await this.prisma.employees.findFirst({
         where: {
           name:       { equals: updateData.name,       mode: 'insensitive' },
           department: { equals: updateData.department, mode: 'insensitive' },
-          NOT: { id }, // exclude self
+          NOT: { id },
         },
       });
 
@@ -147,7 +143,6 @@ export class EmployeesService {
   // ─── DELETE ───────────────────────────────────────────────────────────────
 
   async remove(id: string) {
-    // Throws 404 automatically if not found
     await this.findOne(id);
 
     try {
@@ -155,6 +150,102 @@ export class EmployeesService {
       return { message: 'Employee deleted successfully' };
     } catch (err) {
       throw new InternalServerErrorException('Failed to delete employee');
+    }
+  }
+
+  // ─── HELPERS ──────────────────────────────────────────────────────────────
+
+  private generateEmail(name: string): string {
+    return (
+      name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@cprodavao.com'
+    );
+  }
+
+  private departmentToRole(department: string): string {
+    const map: Record<string, string> = {
+      Technical:  'technician',
+      Operations: 'staff',
+      Admin:      'admin',
+      Sales:      'frontdesk',
+    };
+    return map[department] ?? 'staff';
+  }
+
+  // ─── CREATE WITH ACCOUNT ──────────────────────────────────────────────────
+
+  async createWithAccount(dto: CreateEmployeeDto) {
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const email    = this.generateEmail(dto.name);
+    const password = 'CproDavao@2026';
+    const role     = this.departmentToRole(dto.department);
+
+    // ← fixed: removed { data: existing } destructuring
+    const existing = await this.prisma.employees.findFirst({
+      where: { name: { equals: dto.name, mode: 'insensitive' } },
+    });
+
+    // Generate unique email if name collision
+    const finalEmail = existing
+      ? email.replace('@cprodavao.com', `${Date.now()}@cprodavao.com`)
+      : email;
+
+    // Create Supabase auth account
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email:         finalEmail,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: dto.name },
+      });
+
+    if (authError) {
+      throw new InternalServerErrorException(
+        `Failed to create auth account: ${authError.message}`,
+      );
+    }
+
+    // Create profile row
+    await supabaseAdmin.from('profiles').upsert({
+      id:         authData.user.id,
+      full_name:  dto.name,
+      email:      finalEmail,
+      role,
+      provider:   'email',
+      avatar_url: '',
+    });
+
+    // Create employee record
+    try {
+      const employee = await this.prisma.employees.create({
+        data: {
+          name:               dto.name,
+          position:           dto.position,
+          department:         dto.department,
+          salary:             dto.salary,
+          status:             dto.status      ?? 'Active',
+          performance:        dto.performance ?? 'Good',
+          availability:       'Available',
+          current_assignment: 'None',
+        },
+      });
+
+      return {
+        employee,
+        credentials: {
+          email:    finalEmail,
+          password,
+          role,
+        },
+      };
+    } catch (err) {
+      // Rollback auth user if employee creation fails
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      throw new InternalServerErrorException('Failed to create employee record');
     }
   }
 }

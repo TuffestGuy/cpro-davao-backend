@@ -32,6 +32,13 @@ export class EmployeesController {
     return this.employeesService.findOne(id);
   }
 
+  // POST /employees/with-account
+  @Post('with-account')
+  @HttpCode(HttpStatus.CREATED)
+  createWithAccount(@Body() dto: CreateEmployeeDto) {
+    return this.employeesService.createWithAccount(dto);
+  }
+
   // POST /employees
   @Post()
   @HttpCode(HttpStatus.CREATED)
