@@ -1,26 +1,18 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  HttpCode,
-  HttpStatus,
-  ParseUUIDPipe,
+  Controller, Get, Post, Patch, Delete,
+  Body, Param, Query, Headers,
+  HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
-import { QueryEmployeeDto } from './dto/query-employee.dto';
+import { QueryEmployeeDto }  from './dto/query-employee.dto';
 
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
-  // GET /employees?search=john&department=Technical&status=Active&page=1&limit=20
+  // GET /employees
   @Get()
   findAll(@Query() query: QueryEmployeeDto) {
     return this.employeesService.findAll(query);
@@ -47,12 +39,14 @@ export class EmployeesController {
   }
 
   // PATCH /employees/:id
+  // Passes x-user-role header to service for hire_date RBAC check
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateEmployeeDto,
+    @Headers('x-user-role') userRole?: string,
   ) {
-    return this.employeesService.update(id, updateDto);
+    return this.employeesService.update(id, updateDto, userRole);
   }
 
   // DELETE /employees/:id
