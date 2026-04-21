@@ -18,8 +18,8 @@ import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([{
-      ttl:   60_000,  // Time To Live: The window of time (60,000 milliseconds = 60 seconds)
-      limit: 3,      // The maximum number of requests allowed within that window
+      ttl:   60_000, // 60 second window
+      limit: 120,    // 120 requests per minute (2 per second) — reasonable for a small business app
     }]),
     CustomersModule,
     AppointmentsModule,
@@ -32,17 +32,14 @@ import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
     JobOrdersModule,
     ProfilesModule,
     QuoteRequestsModule,
-    // keep any modules your teammate added here too
   ],
-
-
   controllers: [AppController],
-  providers: [AppService,
+  providers: [
+    AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard, // Apply the ThrottlerGuard globally to enforce rate limiting
-    }
+      useClass: ThrottlerGuard,
+    },
   ],
 })
-
 export class AppModule {}
