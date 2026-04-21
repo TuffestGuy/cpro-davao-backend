@@ -71,7 +71,7 @@ export class AppointmentsService {
           mobile_number:     String(dto.mobileNumber      ?? ''),
           vehicle_make:      String(dto.vehicleMake        ?? ''),
           vehicle_model:     String(dto.vehicleModel       ?? ''),
-          vehicle_year:      validYear,
+          vehicle_year: Number(dto.vehicleYear),
           vehicle_class:     String(dto.vehicleClass       ?? ''),
           vehicle_plate:     String(dto.vehiclePlateNumber ?? ''),
           payment_method:    String(dto.paymentMethod      ?? ''),
