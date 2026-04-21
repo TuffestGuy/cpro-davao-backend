@@ -1,15 +1,13 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, UploadedFile, UseInterceptors,
-  BadRequestException,
+  Body, Param, Query, Headers,
+  UploadedFile, UseInterceptors,
+  HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { ValidationPipe } from '@nestjs/common';
-
+import { diskStorage }     from 'multer';
+import { extname }         from 'path';
 import { AppointmentsService } from './appointments.service';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
 // ── Multer config ─────────────────────────────────────────────────────────────
 const proofUploadOptions = {
@@ -38,7 +36,7 @@ const proofUploadOptions = {
 // ─────────────────────────────────────────────────────────────────────────────
 @Controller('appointments')
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
+  constructor(private readonly svc: AppointmentsService) {}
 
   // POST /appointments — customer booking (multipart/form-data + proof file)
   @Post()
@@ -60,27 +58,27 @@ export class AppointmentsController {
 
   // GET /appointments — all bookings (admin)
   @Get()
-  findAll() {
-    return this.appointmentsService.findAll();
+  findAll(@Query('status') status?: string) {
+    return this.svc.findAll(status);
   }
 
   // GET /appointments/admin/pending — pending verification queue
   // ⚠ Must be declared BEFORE :id routes
   @Get('admin/pending')
-  findPendingVerification() {
-    return this.appointmentsService.findPendingVerification();
+  findPending() {
+    return this.svc.findPendingVerification();
   }
 
   // GET /appointments/customer/:customerId — customer's own bookings
   @Get('customer/:customerId')
   findByCustomer(@Param('customerId') customerId: string) {
-    return this.appointmentsService.findByCustomer(customerId);
+    return this.svc.findByCustomer(customerId);
   }
 
   // GET /appointments/:id — single booking
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.appointmentsService.findOne(id);
+    return this.svc.findOne(id);
   }
 
   // PATCH /appointments/:id/approve — admin approves
@@ -107,21 +105,39 @@ export class AppointmentsController {
     @Param('id') id: string,
     @Body('status') status: string,
   ) {
-    return this.appointmentsService.updateStatus(id, status);
+    return this.svc.updateStatus(id, status);
+  }
+
+  // ✅ Fix 2: approve not approveBooking
+  @Patch(':id/approve')
+  approve(
+    @Param('id') id: string,
+    @Body('remarks') remarks?: string,
+    @Headers('x-user-email') approvedBy: string = 'frontdesk',
+  ) {
+    return this.svc.approve(id, approvedBy, remarks);
+  }
+
+  // ✅ Fix 3: reject not rejectBooking
+  @Patch(':id/reject')
+  reject(
+    @Param('id') id: string,
+    @Body('reason') reason?: string,
+    @Headers('x-user-email') rejectedBy: string = 'frontdesk',
+  ) {
+    return this.svc.reject(id, rejectedBy, reason);
   }
 
   // PUT /appointments/:id — full edit (admin/staff)
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: any,
-  ) {
-    return this.appointmentsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: any) {
+    return this.svc.update(id, dto);
   }
 
   // DELETE /appointments/:id
   @Delete(':id')
+  @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
-    return this.appointmentsService.remove(id);
+    return this.svc.remove(id);
   }
 }

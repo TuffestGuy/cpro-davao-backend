@@ -1,7 +1,7 @@
+import { createClient } from '@supabase/supabase-js';
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
+  Injectable, NotFoundException, ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -25,6 +25,7 @@ const WITH_CUSTOMER = { customer: true } as const;
 
 @Injectable()
 export class AppointmentsService {
+  constructor(private readonly prisma: PrismaService) {}
 
   // ── CREATE (customer — requires proof file) ───────────────
   async create(dto: CreateAppointmentDto, file: Express.Multer.File) {
@@ -143,16 +144,32 @@ export class AppointmentsService {
     });
   }
 
-  // ── GET ONE ───────────────────────────────────────────────
-  async findOne(id: string) {
-    const appointment = await prisma.appointments.findUnique({
-      where:   { id },
-      include: WITH_CUSTOMER,
+  // ── GET PENDING VERIFICATION QUEUE ────────────────────────────────────────
+  async findPendingVerification() {
+    return await this.prisma.appointments.findMany({
+      where:   { status: 'Pending Verification' },
+      include: { customer: true },
+      orderBy: { created_at: 'asc' },
     });
-    if (!appointment) {
-      throw new NotFoundException(`Appointment ${id} not found`);
-    }
-    return appointment;
+  }
+
+  // ── GET BY CUSTOMER ───────────────────────────────────────────────────────
+  async findByCustomer(customerId: string) {
+    return await this.prisma.appointments.findMany({
+      where:   { customer_id: customerId },
+      include: { customer: true },
+      orderBy: { scheduled_date: 'desc' },
+    });
+  }
+
+  // ── GET ONE ───────────────────────────────────────────────────────────────
+  async findOne(id: string) {
+    const appt = await this.prisma.appointments.findUnique({
+      where:   { id },
+      include: { customer: true },
+    });
+    if (!appt) throw new NotFoundException(`Appointment ${id} not found`);
+    return appt;
   }
 
   // ── ADMIN: APPROVE ────────────────────────────────────────
@@ -168,7 +185,11 @@ export class AppointmentsService {
       data:  { status: 'Confirmed', admin_remarks: remarks ?? null },
       include: WITH_CUSTOMER,
     });
+  } catch (err) {
+    console.error('Create appointment error:', err);
+    throw err;
   }
+}
 
   // ── ADMIN: REJECT ─────────────────────────────────────────
   async rejectBooking(id: string, remarks?: string) {
@@ -187,15 +208,11 @@ export class AppointmentsService {
 
   // ── UPDATE STATUS ─────────────────────────────────────────
   async updateStatus(id: string, status: string) {
-    if (!ALLOWED_STATUSES.includes(status as any)) {
-      throw new BadRequestException(
-        `Invalid status "${status}". Allowed: ${ALLOWED_STATUSES.join(', ')}`,
-      );
-    }
-    return await prisma.appointments.update({
+    await this.findOne(id);
+    return await this.prisma.appointments.update({
       where:   { id },
       data:    { status },
-      include: WITH_CUSTOMER,
+      include: { customer: true },
     });
   }
 
@@ -215,14 +232,14 @@ export class AppointmentsService {
     return await prisma.appointments.update({
       where:   { id },
       data,
-      include: WITH_CUSTOMER,
+      include: { customer: true },
     });
   }
 
-  // ── DELETE ────────────────────────────────────────────────
+  // ── DELETE ────────────────────────────────────────────────────────────────
   async remove(id: string) {
     await this.findOne(id);
-    await prisma.appointments.delete({ where: { id } });
+    await this.prisma.appointments.delete({ where: { id } });
     return { message: 'Appointment deleted successfully' };
   }
 }
