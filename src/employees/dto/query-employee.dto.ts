@@ -1,6 +1,6 @@
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Department, EmpStatus, Performance } from './create-employee.dto';
+import { Department, EmpStatus} from './create-employee.dto';
 
 export class QueryEmployeeDto {
   @IsOptional()
@@ -15,9 +15,6 @@ export class QueryEmployeeDto {
   @IsEnum(EmpStatus)
   status?: EmpStatus;
 
-  @IsOptional()
-  @IsEnum(Performance)
-  performance?: Performance;
 
   @IsOptional()
   @IsEnum(['name', 'created_at', 'salary', 'department'])
