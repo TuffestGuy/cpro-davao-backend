@@ -1,106 +1,240 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import {
+  CreateAppointmentDto,
+  PaymentMethod,
+  PaymentType,
+} from './dto/create-appointment.dto';
 
 const prisma = new PrismaClient();
+
+// ── All statuses the system recognises ──────────────────────
+export const ALLOWED_STATUSES = [
+  'Pending Verification',
+  'Confirmed',
+  'Rejected',
+  'Completed',
+  'Cancelled',
+  'In Progress',
+] as const;
+
+// ── Standard include for every query ────────────────────────
+const WITH_CUSTOMER = { customer: true } as const;
 
 @Injectable()
 export class AppointmentsService {
 
-  // CREATE
-  async create(dto: any) {
-  try {
+  // ── CREATE ────────────────────────────────────────────────
+  async create(dto: CreateAppointmentDto, file: Express.Multer.File) {
+
+    // 1. Proof of payment is mandatory
+    if (!file) {
+      throw new BadRequestException('Proof of payment file is required');
+    }
+
+    // 2. Date must not be in the past
+    const appointmentDate = new Date(dto.date);
+    appointmentDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (appointmentDate < today) {
+      throw new BadRequestException('Appointment date cannot be in the past');
+    }
+
+    // 3. Build combined scheduled_date (date + time)
+    const scheduledDate = new Date(`${dto.date}T${dto.time}`);
+    if (isNaN(scheduledDate.getTime())) {
+      throw new BadRequestException('Invalid date or time value');
+    }
+
+    // 4. Payment computation rules
+    const totalAmount      = Number(dto.totalAmount);
+    const deposit          = Number(dto.deposit);
+    const remainingBalance = Number(dto.remainingBalance);
+
+    if (dto.paymentType === PaymentType.FULL_PAYMENT) {
+      if (Math.abs(deposit - totalAmount) > 0.01) {
+        throw new BadRequestException(
+          'For Full Payment: deposit must equal totalAmount',
+        );
+      }
+      if (Math.abs(remainingBalance) > 0.01) {
+        throw new BadRequestException(
+          'For Full Payment: remainingBalance must be 0',
+        );
+      }
+    }
+
+    if (dto.paymentType === PaymentType.DOWN_PAYMENT) {
+      if (deposit >= totalAmount) {
+        throw new BadRequestException(
+          'For Down Payment: deposit must be less than totalAmount',
+        );
+      }
+      const expected = totalAmount - deposit;
+      if (Math.abs(remainingBalance - expected) > 0.01) {
+        throw new BadRequestException(
+          'For Down Payment: remainingBalance must equal totalAmount - deposit',
+        );
+      }
+    }
+
+    // 5. Parse addons (arrives as JSON string in multipart)
+    let addons = dto.addons ?? [];
+    if (typeof addons === 'string') {
+      try { addons = JSON.parse(addons); } catch { addons = []; }
+    }
+
+    // 6. Normalise file path (cross-platform)
+    const proofPath = file.path.replace(/\\/g, '/');
+
     return await prisma.appointments.create({
       data: {
-        customer_id:    dto.customer_id,
-        service_type:   dto.service_type,
-        scheduled_date: (() => {
-          const d = new Date(dto.scheduled_date);
-          if (isNaN(d.getTime())) throw new BadRequestException("Invalid scheduled_date");
-          return d;
-        })(),
-        total_cost:  dto.total_cost,
-        status:      'Pending',
+        // ── Existing fields ──
+        customer_id:          dto.customerId,
+        service_type:         dto.service,
+        scheduled_date:       scheduledDate,
+        total_cost:           totalAmount,
+        status:               'Pending Verification',
+
+        // ── New fields ───────
+        full_name:            dto.fullName,
+        mobile_number:        dto.mobileNumber,
+        addons,
+        vehicle_make:         dto.vehicleMake,
+        vehicle_model:        dto.vehicleModel,
+        vehicle_year:         Number(dto.vehicleYear),
+        vehicle_class:        dto.vehicleClass,
+        vehicle_plate_number: dto.vehiclePlateNumber,
+        appointment_time:     dto.time,
+        payment_method:       dto.paymentMethod,
+        payment_type:         dto.paymentType,
+        proof_of_payment:     proofPath,
+        total_amount:         totalAmount,
+        deposit,
+        remaining_balance:    remainingBalance,
+        notes:                dto.notes ?? null,
       },
-      include: { customer: true },  // ← try changing to customers: true if error persists
+      include: WITH_CUSTOMER,
     });
-  } catch (err) {
-    console.error('Prisma create error:', err); // ← check Render logs for this
-    throw err;
   }
-}
 
-  async findByCustomer(customerId: string) {
-  return await prisma.appointments.findMany({
-    where:   { customer_id: customerId },
-    include: { customer: true },
-    orderBy: { scheduled_date: 'desc' },
-  });
-}
-
-  // GET ALL
+  // ── GET ALL (admin) ───────────────────────────────────────
   async findAll() {
     return await prisma.appointments.findMany({
-      include:  { customer: true },
-      orderBy:  { scheduled_date: 'asc' },
+      include: WITH_CUSTOMER,
+      orderBy: { scheduled_date: 'asc' },
     });
   }
 
-  // GET ONE
+  // ── GET PENDING VERIFICATION QUEUE (admin) ────────────────
+  async findPendingVerification() {
+    return await prisma.appointments.findMany({
+      where:   { status: 'Pending Verification' },
+      include: WITH_CUSTOMER,
+      orderBy: { created_at: 'asc' },
+    });
+  }
+
+  // ── GET BY CUSTOMER ───────────────────────────────────────
+  async findByCustomer(customerId: string) {
+    return await prisma.appointments.findMany({
+      where:   { customer_id: customerId },
+      include: WITH_CUSTOMER,
+      orderBy: { scheduled_date: 'desc' },
+    });
+  }
+
+  // ── GET ONE ───────────────────────────────────────────────
   async findOne(id: string) {
     const appointment = await prisma.appointments.findUnique({
       where:   { id },
-      include: { customer: true },
+      include: WITH_CUSTOMER,
     });
-
     if (!appointment) {
       throw new NotFoundException(`Appointment ${id} not found`);
     }
-
     return appointment;
   }
 
-  // UPDATE STATUS ONLY (for "Mark as Complete" button)
-  async updateStatus(id: string, status: string) {
-    const valid = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
-
-    if (!valid.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+  // ── ADMIN: APPROVE ────────────────────────────────────────
+  async approveBooking(id: string, remarks?: string) {
+    const appt = await this.findOne(id);
+    if (appt.status !== 'Pending Verification') {
+      throw new BadRequestException(
+        `Cannot approve a booking with status "${appt.status}"`,
+      );
     }
+    return await prisma.appointments.update({
+      where: { id },
+      data: {
+        status:        'Confirmed',
+        admin_remarks: remarks ?? null,
+      },
+      include: WITH_CUSTOMER,
+    });
+  }
 
+  // ── ADMIN: REJECT ─────────────────────────────────────────
+  async rejectBooking(id: string, remarks?: string) {
+    const appt = await this.findOne(id);
+    if (appt.status !== 'Pending Verification') {
+      throw new BadRequestException(
+        `Cannot reject a booking with status "${appt.status}"`,
+      );
+    }
+    return await prisma.appointments.update({
+      where: { id },
+      data: {
+        status:        'Rejected',
+        admin_remarks: remarks ?? null,
+      },
+      include: WITH_CUSTOMER,
+    });
+  }
+
+  // ── UPDATE STATUS (general — staff/admin) ─────────────────
+  async updateStatus(id: string, status: string) {
+    if (!ALLOWED_STATUSES.includes(status as any)) {
+      throw new BadRequestException(
+        `Invalid status "${status}". Allowed: ${ALLOWED_STATUSES.join(', ')}`,
+      );
+    }
     return await prisma.appointments.update({
       where:   { id },
       data:    { status },
-      include: { customer: true },
+      include: WITH_CUSTOMER,
     });
   }
 
-  // UPDATE FULL APPOINTMENT
+  // ── FULL UPDATE (existing — admin/staff edits) ────────────
   async update(id: string, dto: any) {
-    // Check it exists first
     await this.findOne(id);
-
-    // Only update fields that were actually sent
     const data: any = {};
-    if (dto.customer_id    !== undefined) data.customer_id    = dto.customer_id;
-    if (dto.service_type   !== undefined) data.service_type   = dto.service_type;
-    if (dto.scheduled_date !== undefined) data.scheduled_date = new Date(dto.scheduled_date);
-    if (dto.total_cost !== undefined) data.total_cost = dto.total_cost;
-    if (dto.status         !== undefined) data.status         = dto.status;
-
+    if (dto.customer_id           !== undefined) data.customer_id          = dto.customer_id;
+    if (dto.service_type          !== undefined) data.service_type         = dto.service_type;
+    if (dto.scheduled_date        !== undefined) data.scheduled_date       = new Date(dto.scheduled_date);
+    if (dto.total_cost            !== undefined) data.total_cost           = dto.total_cost;
+    if (dto.status                !== undefined) data.status               = dto.status;
+    if (dto.notes                 !== undefined) data.notes                = dto.notes;
+    if (dto.admin_remarks         !== undefined) data.admin_remarks        = dto.admin_remarks;
+    if (dto.assigned_staff        !== undefined) data.assigned_staff       = dto.assigned_staff;
+    if (dto.employee_id           !== undefined) data.employee_id          = dto.employee_id;
     return await prisma.appointments.update({
       where:   { id },
       data,
-      include: { customer: true },
+      include: WITH_CUSTOMER,
     });
   }
 
-  // DELETE
+  // ── DELETE ────────────────────────────────────────────────
   async remove(id: string) {
-    // Check it exists first
     await this.findOne(id);
-
     await prisma.appointments.delete({ where: { id } });
-
     return { message: 'Appointment deleted successfully' };
   }
 }

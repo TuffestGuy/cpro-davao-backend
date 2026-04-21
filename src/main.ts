@@ -1,28 +1,35 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 1. OPEN THE GATES (CORS)
+  // 1. CORS
   app.enableCors({
     origin: [
-      'http://localhost:5173', // Your local React testing environment
-      'https://cpro-davao.vercel.app' // Your live Vercel production website
+      'http://localhost:5173',
+      'https://cpro-davao.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
+  // 2. Global validation pipe
   app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,       // Strips out extra garbage data
-    forbidNonWhitelisted: true, // Throws error if unknown fields are sent
-    transform: true,       // Converts string "50" to number 50 automatically
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
   }));
 
-  // 2. LISTEN TO RENDER'S PORT
-  // Render automatically injects a PORT variable. If it's not there (like on your laptop), default to 3000.
+  // 3. Serve uploaded proof-of-payment files as static assets
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads',
+  });
+
+  // 4. Start server
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Backend is running on port ${port}`);

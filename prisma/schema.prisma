@@ -98,17 +98,38 @@ model transaction {
 }
 
 model appointments {
-  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  customer_id    String     @db.Uuid
-  service_type   String
-  scheduled_date DateTime   @db.Timestamptz(6)
-  status         String     @default("Pending")
-  total_cost     Decimal    @db.Decimal
-  created_at     DateTime?  @default(now()) @db.Timestamptz(6)
-  customer       customers  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  payments       payments[]
-  employee_id    String?   @db.Uuid          // ← add this
-  assigned_staff String?                     // ← add this
+  id                   String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  customer_id          String     @db.Uuid
+  service_type         String
+  scheduled_date       DateTime   @db.Timestamptz(6)
+  status               String     @default("Pending Verification")
+  total_cost           Decimal    @db.Decimal
+  created_at           DateTime?  @default(now()) @db.Timestamptz(6)
+  employee_id          String?    @db.Uuid
+  assigned_staff       String?
+
+  // ── New booking-flow fields ──────────────────────────────
+  full_name            String?
+  mobile_number        String?
+  addons               Json?      @default("[]")
+  vehicle_make         String?
+  vehicle_model        String?
+  vehicle_year         Int?
+  vehicle_class        String?
+  vehicle_plate_number String?
+  appointment_time     String?
+  payment_method       String?
+  payment_type         String?
+  proof_of_payment     String?
+  total_amount         Decimal?   @db.Decimal(10, 2)
+  deposit              Decimal?   @db.Decimal(10, 2)
+  remaining_balance    Decimal?   @db.Decimal(10, 2)
+  notes                String?
+  admin_remarks        String?
+  // ────────────────────────────────────────────────────────
+
+  customer  customers  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  payments  payments[]
 }
 
 model payments {

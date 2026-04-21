@@ -23,7 +23,9 @@ const SIZE_LABELS: Record<string, string> = {
 @Injectable()
 export class QuoteRequestsService {
   // Resend is instantiated once per service instance
-  private resend = new Resend(process.env.RESEND_API_KEY);
+  private resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
   // PrismaService is injected — no `new PrismaClient()` here
   constructor(private readonly prisma: PrismaService) {}
@@ -57,7 +59,7 @@ export class QuoteRequestsService {
       const serviceLabel = SERVICE_LABELS[dto.service] ?? dto.service;
       const sizeLabel    = SIZE_LABELS[dto.size]       ?? dto.size;
 
-      await this.resend.emails.send({
+      await this.resend?.emails.send({  // ← null guard: skips if no API key
         // Until you verify a domain on resend.com, you MUST use this from address
         // After domain verification, change to: 'Ceramic Pro Davao <noreply@yourdomain.com>'
         from:    'Ceramic Pro Davao <onboarding@resend.dev>',
