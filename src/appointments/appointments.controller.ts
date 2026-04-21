@@ -11,7 +11,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
-// ── Multer config ─────────────────────────────────────────────
+// ── Multer config ─────────────────────────────────────────────────────────────
 const proofUploadOptions = {
   storage: diskStorage({
     destination: './uploads/proof-of-payment',
@@ -26,29 +26,21 @@ const proofUploadOptions = {
       'image/webp', 'application/pdf',
     ];
     const allowedExt = /\.(jpeg|jpg|png|webp|pdf)$/i;
-    if (
-      allowedMimes.includes(file.mimetype) &&
-      allowedExt.test(file.originalname)
-    ) {
+    if (allowedMimes.includes(file.mimetype) && allowedExt.test(file.originalname)) {
       cb(null, true);
     } else {
-      cb(
-        new BadRequestException('Only JPEG, PNG, WEBP, or PDF files are allowed'),
-        false,
-      );
+      cb(new BadRequestException('Only JPEG, PNG, WEBP, or PDF files are allowed'), false);
     }
   },
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 };
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
-  // POST /appointments
-  // Content-Type: multipart/form-data
-  // Body fields + file field "proofFile"
+  // POST /appointments — customer booking (multipart/form-data + proof file)
   @Post()
   @UseInterceptors(FileInterceptor('proofFile', proofUploadOptions))
   create(
@@ -59,35 +51,39 @@ export class AppointmentsController {
     return this.appointmentsService.create(dto, file);
   }
 
-  // GET /appointments
-  // Admin — all bookings
+  // POST /appointments/admin — admin creates directly (no proof required, auto-Confirmed)
+  // ⚠ Must be declared BEFORE :id routes
+  @Post('admin')
+  createAdmin(@Body() dto: any) {
+    return this.appointmentsService.createAdmin(dto);
+  }
+
+  // GET /appointments — all bookings (admin)
   @Get()
   findAll() {
     return this.appointmentsService.findAll();
   }
 
-  // GET /appointments/admin/pending
-  // Admin — only Pending Verification queue
-  // ⚠ Must be declared BEFORE :id to avoid route conflict
+  // GET /appointments/admin/pending — pending verification queue
+  // ⚠ Must be declared BEFORE :id routes
   @Get('admin/pending')
   findPendingVerification() {
     return this.appointmentsService.findPendingVerification();
   }
 
-  // GET /appointments/customer/:customerId
+  // GET /appointments/customer/:customerId — customer's own bookings
   @Get('customer/:customerId')
   findByCustomer(@Param('customerId') customerId: string) {
     return this.appointmentsService.findByCustomer(customerId);
   }
 
-  // GET /appointments/:id
+  // GET /appointments/:id — single booking
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.appointmentsService.findOne(id);
   }
 
-  // PATCH /appointments/:id/approve
-  // Admin approves the booking
+  // PATCH /appointments/:id/approve — admin approves
   @Patch(':id/approve')
   approve(
     @Param('id') id: string,
@@ -96,8 +92,7 @@ export class AppointmentsController {
     return this.appointmentsService.approveBooking(id, remarks);
   }
 
-  // PATCH /appointments/:id/reject
-  // Admin rejects the booking
+  // PATCH /appointments/:id/reject — admin rejects
   @Patch(':id/reject')
   reject(
     @Param('id') id: string,
@@ -106,8 +101,7 @@ export class AppointmentsController {
     return this.appointmentsService.rejectBooking(id, remarks);
   }
 
-  // PATCH /appointments/:id/status
-  // General status update (In Progress, Completed, Cancelled)
+  // PATCH /appointments/:id/status — general status update
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
@@ -116,8 +110,7 @@ export class AppointmentsController {
     return this.appointmentsService.updateStatus(id, status);
   }
 
-  // PUT /appointments/:id
-  // Full edit (admin/staff only)
+  // PUT /appointments/:id — full edit (admin/staff)
   @Put(':id')
   update(
     @Param('id') id: string,
