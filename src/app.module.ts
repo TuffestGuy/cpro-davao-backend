@@ -10,6 +10,7 @@ import { ServicesModule } from './services/services.module';
 import { ShopSettingsModule } from './shop-settings/shop-settings.module';
 import { PartRequestsModule } from './part-requests/part-requests.module';
 import { JobOrdersModule } from './job-orders/job-orders.module';
+import { ProfilesModule } from './profiles/profiles.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { JobOrdersModule } from './job-orders/job-orders.module';
     ShopSettingsModule,
     PartRequestsModule,
     JobOrdersModule,
+    ProfilesModule,
     // keep any modules your teammate added here too
   ],
   controllers: [AppController],
