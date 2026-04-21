@@ -27,9 +27,14 @@ export class CustomersService {
   }
 
   async findByEmail(email: string) {
-  return await prisma.customers.findFirst({
-    where: { email },
-  });
+  try {
+    return await prisma.customers.findFirst({
+      where: { email },
+    });
+  } catch (err) {
+    console.error('findByEmail error:', err);
+    return null; // ← return null instead of throwing
+  }
 }
 
   async findAll() {

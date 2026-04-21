@@ -17,8 +17,9 @@ export class CustomersController {
   }
 
   @Get('by-email/:email')
-  findByEmail(@Param('email') email: string) {
-  return this.customersService.findByEmail(email);
+async findByEmail(@Param('email') email: string) {
+  const customer = await this.customersService.findByEmail(email);
+  return customer ?? {}; // ← return empty object instead of null
 }
 
   @Patch(':id')

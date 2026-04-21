@@ -21,7 +21,7 @@ model customers {
   last_service    DateTime?      @db.Date
   total_spent     Decimal?       @default(0) @db.Decimal
   status          String?        @default("Active")
-  password        String?
+  
   appointments    appointments[]
   payments        payments[]
 }
