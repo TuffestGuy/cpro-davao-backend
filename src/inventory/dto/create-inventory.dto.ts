@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateInventoryDto {
   @IsString()
@@ -9,27 +10,32 @@ export class CreateInventoryDto {
   @IsNotEmpty()
   category: string;
 
-  @IsNumber()
   @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
   stock?: number;
 
-  @IsNumber()
   @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
   stockIn?: number;
 
-  @IsNumber()
   @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
   stockOut?: number;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   unit?: string;
 
-  @IsNumber()
   @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
   reorderLevel?: number;
 
-  @IsNumber()
   @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
   price?: number;
 }
