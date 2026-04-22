@@ -39,22 +39,23 @@ export class AppointmentsController {
 
   // POST /appointments — multipart/form-data with proof file
   @Post()
-  @UseInterceptors(FileInterceptor('proofFile', {
-    storage: diskStorage({
-      destination: './uploads/proofs',
-      filename: (_req, file, cb) => {
-        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        cb(null, `${unique}${extname(file.originalname)}`);
-      },
-    }),
-  }))
-  create(
-    @Body() dto: any,
-    @UploadedFile() file?: Express.Multer.File,
-  ) {
-    const proofUrl = file ? `/uploads/proofs/${file.filename}` : '';
-    return this.svc.create(dto, proofUrl);
-  }
+@UseInterceptors(FileInterceptor('proofFile', {
+  storage: diskStorage({
+    destination: './uploads/proofs',
+    filename: (_req, file, cb) => {
+      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `${unique}${extname(file.originalname)}`);
+    },
+  }),
+}))
+async create(
+  @Body() dto: any,
+  @UploadedFile() file?: Express.Multer.File,
+) {
+  // Pass the LOCAL file path — service will upload to Supabase and delete local
+  const localPath = file ? `/uploads/proofs/${file.filename}` : '';
+  return this.svc.create(dto, localPath);
+}
 
   // PATCH /appointments/:id/status
   @Patch(':id/status')

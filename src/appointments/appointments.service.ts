@@ -4,10 +4,55 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
+import { createClient } from '@supabase/supabase-js';
+import * as fs   from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ── PRIVATE: Upload proof file to Supabase Storage ──────────────────────
+  private async uploadProofToSupabase(
+    localFilePath: string,
+    fileName:      string,
+  ): Promise<string> {
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    const fileBuffer  = fs.readFileSync(localFilePath);
+    const storagePath = `payments/${fileName}`;
+
+    // Detect content type from extension
+    const ext = path.extname(fileName).toLowerCase();
+    const contentType =
+      ext === '.pdf'  ? 'application/pdf' :
+      ext === '.png'  ? 'image/png'       :
+      ext === '.webp' ? 'image/webp'      :
+      'image/jpeg';
+
+    const { error } = await supabase.storage
+      .from('proofs')
+      .upload(storagePath, fileBuffer, {
+        contentType,
+        upsert: true,
+      });
+
+    if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+
+    // Get public URL
+    const { data } = supabase.storage
+      .from('proofs')
+      .getPublicUrl(storagePath);
+
+    // Delete local file after successful upload
+    try { fs.unlinkSync(localFilePath); } catch {}
+
+    return data.publicUrl;
+  }
 
   // ── GET ALL ───────────────────────────────────────────────────────────────
   async findAll(status?: string) {
@@ -46,16 +91,32 @@ export class AppointmentsService {
     return appt;
   }
 
-  // ── CREATE (multipart handled by controller) ──────────────────────────────
-  async create(dto: any, proofUrl?: string) {
+  // ── CREATE ────────────────────────────────────────────────────────────────
+  async create(dto: any, localProofPath?: string) {
     console.log('RAW DTO:', JSON.stringify(dto, null, 2));
-    console.log('proofUrl:', proofUrl);
+    console.log('localProofPath:', localProofPath);
+
     try {
       const scheduledDate = new Date(`${dto.date}T${dto.time}`);
 
       // Validate vehicle_year — only accept 4-digit years
       const rawYear   = String(dto.vehicleYear ?? '');
       const validYear = /^\d{4}$/.test(rawYear) ? rawYear : '';
+
+      // ── Upload proof to Supabase Storage ──
+      let proofUrl = '';
+      if (localProofPath) {
+        const absolutePath = path.join(process.cwd(), localProofPath);
+        const fileName     = path.basename(absolutePath);
+        try {
+          proofUrl = await this.uploadProofToSupabase(absolutePath, fileName);
+          console.log('Proof uploaded to Supabase:', proofUrl);
+        } catch (uploadErr) {
+          console.error('Proof upload failed:', uploadErr);
+          // Don't block appointment creation if upload fails
+          proofUrl = localProofPath;
+        }
+      }
 
       return await this.prisma.appointments.create({
         data: {
@@ -71,13 +132,13 @@ export class AppointmentsService {
           mobile_number:     String(dto.mobileNumber      ?? ''),
           vehicle_make:      String(dto.vehicleMake        ?? ''),
           vehicle_model:     String(dto.vehicleModel       ?? ''),
-          vehicle_year: Number(dto.vehicleYear),
+          vehicle_year:      validYear,
           vehicle_class:     String(dto.vehicleClass       ?? ''),
           vehicle_plate:     String(dto.vehiclePlateNumber ?? ''),
           payment_method:    String(dto.paymentMethod      ?? ''),
           payment_type:      String(dto.paymentType        ?? ''),
           addons:            dto.addons ? JSON.stringify(dto.addons) : '[]',
-          proof_url:         proofUrl ?? '',
+          proof_url:         proofUrl,   // ← Supabase public URL
         },
         include: { customer: true },
       });
