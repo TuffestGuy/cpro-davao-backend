@@ -1,12 +1,13 @@
 import {
   IsString, IsNotEmpty, IsOptional,
-  IsEnum, IsInt, Min, Max, IsNumber, Matches,
+  IsEnum, IsNumber, Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum PaymentMethod {
   BANK_TRANSFER = 'Bank Transfer',
   QR_PAYMENT    = 'QR Payment',
+  CASH          = 'Cash', // <-- Added Cash to the VIP list!
 }
 
 export enum PaymentType {
@@ -21,77 +22,78 @@ export class CreateAppointmentDto {
   customerId: string;
 
   @IsString()
-  @IsNotEmpty()
-  fullName: string;
+  @IsOptional() 
+  fullName?: string;
 
   @IsString()
-  @IsNotEmpty()
-  @Matches(/^[0-9+\-\s()]{7,20}$/, { message: 'Invalid mobile number format' })
-  mobileNumber: string;
+  @IsOptional() // Front desk might not provide this initially
+  mobileNumber?: string;
 
   // ── Service ───────────────────────────────────────────────
   @IsString()
   @IsNotEmpty()
   service: string;
 
-  // addons arrives as a JSON string in multipart; parsed in service
   @IsOptional()
   addons?: any;
 
   // ── Vehicle ───────────────────────────────────────────────
   @IsString()
-  @IsNotEmpty()
-  vehicleMake: string;
+  @IsOptional() // Made optional for Front Desk
+  vehicleMake?: string;
 
   @IsString()
-  @IsNotEmpty()
-  vehicleModel: string;
-
-  @Transform(({ value }) => parseInt(value, 10))
-  @IsInt()
-  @Min(1900)
-  @Max(new Date().getFullYear() + 2)
-  vehicleYear: number;
+  @IsOptional()
+  vehicleModel?: string;
 
   @IsString()
-  @IsNotEmpty()
-  vehicleClass: string;
+  @IsOptional() // Changed to String to match Prisma Schema!
+  vehicleYear?: string;
 
   @IsString()
-  @IsNotEmpty()
-  vehiclePlateNumber: string;
+  @IsOptional()
+  vehicleClass?: string;
+
+  @IsString()
+  @IsOptional()
+  vehiclePlateNumber?: string;
 
   // ── Schedule ──────────────────────────────────────────────
   @IsString()
   @IsNotEmpty()
-  date: string;   // expected format: YYYY-MM-DD
+  date: string;   
 
   @IsString()
   @IsNotEmpty()
-  time: string;   // expected format: HH:mm
+  time: string;   
 
   // ── Payment ───────────────────────────────────────────────
   @IsEnum(PaymentMethod, {
     message: `paymentMethod must be one of: ${Object.values(PaymentMethod).join(', ')}`,
   })
-  paymentMethod: PaymentMethod;
+  @IsOptional() // Made optional for flexible booking
+  paymentMethod?: PaymentMethod;
 
   @IsEnum(PaymentType, {
     message: `paymentType must be one of: ${Object.values(PaymentType).join(', ')}`,
   })
-  paymentType: PaymentType;
+  @IsOptional()
+  paymentType?: PaymentType;
 
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()
-  totalAmount: number;
+  @IsOptional()
+  totalAmount?: number;
 
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()
-  deposit: number;
+  @IsOptional()
+  deposit?: number;
 
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()
-  remainingBalance: number;
+  @IsOptional()
+  remainingBalance?: number;
 
   // ── Optional ──────────────────────────────────────────────
   @IsOptional()
