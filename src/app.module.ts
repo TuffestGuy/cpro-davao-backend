@@ -14,6 +14,8 @@ import { PartRequestsModule } from './part-requests/part-requests.module';
 import { JobOrdersModule } from './job-orders/job-orders.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
+import { VechiclesModule } from './vechicles/vechicles.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
     JobOrdersModule,
     ProfilesModule,
     QuoteRequestsModule,
+    VechiclesModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [

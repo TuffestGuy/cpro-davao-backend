@@ -24,6 +24,7 @@ model customers {
   status          String?        @default("Active")
   appointments    appointments[]
   payments        payments[]
+  vehicles     vehicles[]
 
   @@schema("public")
 }
@@ -694,6 +695,21 @@ model webauthn_credentials {
 
   @@index([user_id])
   @@schema("auth")
+}
+
+model vehicles {
+  id           String    @id @default(uuid())
+  user_id      String
+  name         String?
+  brand        String
+  model        String
+  year         String
+  plate_number String?
+  color        String?
+  created_at   DateTime? @default(now())
+  customer     customers @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@schema("public")
 }
 
 enum appointment_status {
