@@ -706,6 +706,7 @@ model vehicles {
   year         String
   plate_number String?
   color        String?
+  vehicle_class String? 
   created_at   DateTime? @default(now())
   customer     customers @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
