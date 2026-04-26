@@ -60,6 +60,37 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## .env
+
+```bash
+VITE_SUPABASE_URL=https://hgnglkhcfekoestekycc.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_Cw_vZs6nmRjiJiC7ijYSgQ_SDjKhmIJ
+VITE_API_BASE_URL=https://cpro-api.onrender.com
+```
+
+## .env(backend)
+
+```bash
+# Environment variables declared in this file are NOT automatically loaded by Prisma.
+# Please add `import "dotenv/config";` to your `prisma.config.ts` file, or use the Prisma CLI with Bun
+# to load environment variables from .env files: https://pris.ly/prisma-config-env-vars.
+
+# Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB.
+# See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+# The following `prisma+postgres` URL is similar to the URL produced by running a local Prisma Postgres
+# server with the `prisma dev` CLI command, when not choosing any non-default ports or settings. The API key, unlike the
+# one found in a remote Prisma Postgres URL, does not contain any sensitive information.
+
+DATABASE_URL="postgresql://postgres.hgnglkhcfekoestekycc:Skibidi120104@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.hgnglkhcfekoestekycc:Skibidi120104@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres"
+
+
+JWT_SECRET=700d027c275be27f51a5914c2c5b9e46093b4a0a3a1972ed2d0d63746d76c2b6
+
+RESEND_API_KEY = re_eSJAJJfP_BYUN1cYr5xU2miKkHy1NqWi5
+SHOP_EMAIL=johnwick120104@gmail.com
+```
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
