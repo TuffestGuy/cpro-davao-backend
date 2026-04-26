@@ -19,6 +19,7 @@ export class VehiclesService {
     year:         string;
     plate_number?: string;
     color?:       string;
+    vehicle_class?: string;
   }) {
     return this.prisma.vehicles.create({
       data: {
@@ -29,6 +30,7 @@ export class VehiclesService {
         year:         dto.year,
         plate_number: dto.plate_number ?? null,
         color:        dto.color        ?? null,
+        vehicle_class: dto.vehicle_class ?? null,
       },
     });
   }
@@ -40,6 +42,7 @@ export class VehiclesService {
     year:         string;
     plate_number: string;
     color:        string;
+    vehicle_class: string;
   }>) {
     const vehicle = await this.prisma.vehicles.findUnique({ where: { id } });
     if (!vehicle)               throw new NotFoundException('Vehicle not found');
