@@ -106,4 +106,25 @@ export class InventoryService {
     await prisma.inventory_items.delete({ where: { id } });
     return { message: 'Inventory item deleted successfully' };
   }
+
+  async getMovements(itemId: string) {
+    return prisma.stock_movements.findMany({
+      where: { item_id: itemId },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async addMovement(itemId: string, dto: any) {
+    return prisma.stock_movements.create({
+      data: {
+        item_id:   itemId,
+        type:      dto.type,
+        quantity:  dto.quantity,
+        reference: dto.reference ?? null,
+        notes:     dto.notes     ?? null,
+        by:        dto.by        ?? null,
+        date:      dto.date      ? new Date(dto.date) : new Date(),
+      },
+    });
+  }
 }

@@ -40,4 +40,13 @@ export class InventoryController {
   remove(@Param('id') id: string) {
     return this.inventoryService.remove(id);
   }
+  @Get(':id/movements')
+  getMovements(@Param('id') id: string) {
+    return this.inventoryService.getMovements(id);
+  }
+
+  @Post(':id/movements')
+  addMovement(@Param('id') id: string, @Body() body: any) {
+    return this.inventoryService.addMovement(id, body);
+  }
 }

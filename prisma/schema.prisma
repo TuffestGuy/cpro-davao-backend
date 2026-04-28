@@ -70,6 +70,7 @@ model inventory_items {
   stock_in            Int      @default(0)
   stock_out           Int      @default(0)
   unit                String   @default("pcs")
+  stock_movements stock_movements[]
 
   @@schema("public")
 }
@@ -712,6 +713,24 @@ model vehicles {
 
   @@schema("public")
 }
+
+model stock_movements {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  item_id    String   @db.Uuid
+  type       String   // "in", "out", "reorder"
+  quantity   Int
+  reference  String?
+  notes      String?
+  by         String?
+  date       DateTime @default(now()) @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  inventory_items inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@index([item_id])
+  @@schema("public")
+}
+
+
 
 enum appointment_status {
   pending
