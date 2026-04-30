@@ -25,6 +25,12 @@ export class AppointmentsController {
     return this.svc.findPendingVerification();
   }
 
+  // GET /appointments/admin/refunds — pending refund requests
+  @Get('admin/refunds')
+  findPendingRefunds() {
+    return this.svc.findPendingRefunds();
+  }
+
   // GET /appointments/customer/:customerId — MUST be before :id routes
   @Get('customer/:customerId')
   findByCustomer(@Param('customerId') customerId: string) {
@@ -39,23 +45,22 @@ export class AppointmentsController {
 
   // POST /appointments — multipart/form-data with proof file
   @Post()
-@UseInterceptors(FileInterceptor('proofFile', {
-  storage: diskStorage({
-    destination: './uploads/proofs',
-    filename: (_req, file, cb) => {
-      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      cb(null, `${unique}${extname(file.originalname)}`);
-    },
-  }),
-}))
-async create(
-  @Body() dto: any,
-  @UploadedFile() file?: Express.Multer.File,
-) {
-  // Pass the LOCAL file path — service will upload to Supabase and delete local
-  const localPath = file ? `/uploads/proofs/${file.filename}` : '';
-  return this.svc.create(dto, localPath);
-}
+  @UseInterceptors(FileInterceptor('proofFile', {
+    storage: diskStorage({
+      destination: './uploads/proofs',
+      filename: (_req, file, cb) => {
+        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        cb(null, `${unique}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  async create(
+    @Body() dto: any,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const localPath = file ? `/uploads/proofs/${file.filename}` : '';
+    return this.svc.create(dto, localPath);
+  }
 
   // PATCH /appointments/:id/status
   @Patch(':id/status')
@@ -97,5 +102,56 @@ async create(
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
     return this.svc.remove(id);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  REFUND ENDPOINTS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // PATCH /appointments/:id/refund/request  (customer requests refund)
+  @Patch(':id/refund/request')
+  requestRefund(
+    @Param('id') id: string,
+    @Body('amount') amount: number,
+  ) {
+    return this.svc.requestRefund(id, amount);
+  }
+
+  // PATCH /appointments/:id/refund/confirm  (admin confirms + sends email)
+  @Patch(':id/refund/confirm')
+  confirmRefund(
+    @Param('id') id: string,
+    @Body('amount') amount: number,
+  ) {
+    return this.svc.confirmRefund(id, amount);
+  }
+
+  // PATCH /appointments/:id/refund/details  (customer submits account info)
+  @Patch(':id/refund/details')
+  submitRefundDetails(
+    @Param('id') id: string,
+    @Body() dto: {
+      method:      string;
+      account:     string;
+      accountName: string;
+      note?:       string;
+    },
+  ) {
+    return this.svc.submitRefundDetails(id, dto);
+  }
+
+  // PATCH /appointments/:id/refund/process  (admin marks done + logs transaction)
+  @Patch(':id/refund/process')
+  processRefund(@Param('id') id: string) {
+    return this.svc.processRefund(id);
+  }
+
+  // PATCH /appointments/:id/refund/reject  (admin rejects request)
+  @Patch(':id/refund/reject')
+  rejectRefund(
+    @Param('id') id: string,
+    @Body('reason') reason?: string,
+  ) {
+    return this.svc.rejectRefund(id, reason);
   }
 }
